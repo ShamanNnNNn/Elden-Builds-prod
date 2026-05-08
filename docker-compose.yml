@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: taskapi-postgres
+    environment:
+      POSTGRES_DB: taskdb
+      POSTGRES_USER: taskuser
+      POSTGRES_PASSWORD: taskpass
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    image: demo8-app:latest
+    container_name: taskapi-app
+    ports:
+      - "9090:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/taskdb
+      SPRING_DATASOURCE_USERNAME: taskuser
+      SPRING_DATASOURCE_PASSWORD: taskpass
+      JWT_SECRET: myProductionJwtSecretKeyThatIsAtLeast32CharsLong123
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    name: eldenbuilds_data

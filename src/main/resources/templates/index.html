@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Elden Builds</title>
+    <link rel="stylesheet" href="/webjars/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        body { background: #0d1117; }
+        .navbar { background: #1a1a2e !important; padding: 10px 0; }
+        .navbar-brand { color: #ffd700 !important; font-size: 1.5rem; font-weight: bold; }
+        .btn-login, .btn-register {
+            padding: 5px 20px;
+            border-radius: 5px;
+            margin-left: 10px;
+            transition: 0.3s;
+        }
+        .btn-login { background: #ff6b35; color: white; border: none; }
+        .btn-login:hover { background: #ff8c5a; }
+        .btn-register { background: #28a745; color: white; border: none; }
+        .btn-register:hover { background: #34ce57; }
+        .btn-logout { background: #dc3545; color: white; border: none; padding: 5px 20px; border-radius: 5px; margin-left: 10px; }
+        .btn-logout:hover { background: #c82333; }
+        .btn-my-builds { background: #17a2b8; color: white; border: none; padding: 5px 20px; border-radius: 5px; margin-left: 10px; }
+        .btn-my-builds:hover { background: #138496; }
+        .user-email { color: #ffd700; margin-right: 10px; font-size: 0.9rem; }
+
+        .build-card {
+            margin-bottom: 25px;
+            transition: transform 0.2s;
+            height: 100%;
+            cursor: pointer;
+            position: relative;
+        }
+        /* Добавьте в стили */
+        .like-btn {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.6);
+            color: #888;
+            border: none;
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .like-btn:hover {
+            background: #ff6b35;
+            color: white;
+        }
+        .filter-btn[data-sort].active {
+            background: #ff6b35;
+            color: white;
+            border-color: #ff6b35;
+        }
+        /* Сортировка */
+        .filter-section .filters-bar .filter-btn[data-sort] {
+            background: #1a1a2e;
+            color: #888;
+            border: 1px solid #444;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+
+        .filter-section .filters-bar .filter-btn[data-sort]:hover {
+            background: #2c2c3e;
+            color: #ffd700;
+        }
+
+        .filter-section .filters-bar .filter-btn[data-sort].active {
+            background: #ff6b35;
+            color: white;
+            border-color: #ff6b35;
+        }
+
+        .like-btn.liked {
+            background: #ff6b35;
+            color: white;
+        }
+
+        .like-btn.liked:hover {
+            background: #dc3545;
+        }
+
+        .like-count {
+            font-weight: bold;
+        }
+        .build-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .card-img-top {
+            height: 200px;
+            object-fit: cover;
+            background: #2c3e2f;
+        }
+        .card-body {
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .card-title {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .equipment {
+            font-size: 0.85rem;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #444;
+        }
+        .equipment div {
+            margin-bottom: 4px;
+        }
+
+        /* Бейджи на карточке */
+        .build-badge {
+            position: absolute;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            z-index: 10;
+            white-space: nowrap;
+        }
+        .category-badge {
+            top: 10px;
+            left: 10px;
+            background: #ff6b35;
+            color: white;
+        }
+        .weaponclass-badge {
+            top: 10px;
+            left: 160px;
+            background: #4a4a8a;
+            color: white;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .delete-btn:hover { background: #c82333; }
+        .author {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 10px;
+            text-align: right;
+        }
+        .modal-content { background: #1a1a2e; color: #eee; }
+        .modal-header { border-bottom: 1px solid #444; }
+        .modal-footer { border-top: 1px solid #444; }
+        .btn-close-white { filter: invert(1); }
+        .create-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        .create-btn:hover { background: #34ce57; }
+        .image-preview {
+            margin-top: 10px;
+            padding: 10px;
+            background: #2c2c3e;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .image-preview img {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 8px;
+        }
+        .remove-image {
+            margin-top: 5px;
+        }
+        .upload-progress {
+            display: none;
+            margin-top: 5px;
+        }
+
+        /* Фильтры */
+        .filters-bar {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            background: #1a1a2e;
+            color: #888;
+            border: 1px solid #444;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+        .filter-btn:hover {
+            background: #2c2c3e;
+            color: #ffd700;
+        }
+        .filter-btn.active {
+            background: #ff6b35;
+            color: white;
+            border-color: #ff6b35;
+        }
+        .filter-btn.reset {
+            background: #dc3545;
+            color: white;
+        }
+        .filter-btn.reset:hover {
+            background: #c82333;
+        }
+        .filter-section {
+            margin-bottom: 20px;
+        }
+        .filter-title {
+            color: #ffd700;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Стили для скалинг бейджей на карточке */
+        .scaling-container {
+            position: absolute;
+            top: 45px;
+            left: 10px;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            z-index: 10;
+        }
+        .scaling-item {
+            background: #2e8b57;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg">
+    <div class="container">
+        <a class="navbar-brand" href="/">⚔️ Elden Builds</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item" id="authButtons">
+                    <button class="btn-login" onclick="showLoginModal()">Login</button>
+                    <button class="btn-register" onclick="showRegisterModal()">Register</button>
+                </li>
+                <li class="nav-item" id="userInfoNav" style="display:none">
+                    <span class="user-email" id="navUserEmail"></span>
+                    <button class="btn-my-builds" id="myBuildsBtn" onclick="showMyBuilds()">My Builds</button>
+                    <button class="btn-logout" onclick="logout()">Logout</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h1 id="pageTitle" class="text-center mb-4" style="color: #ffd700;">🏰 All Elden Ring Builds</h1>
+
+    <!-- Фильтр по категориям урона -->
+    <div class="filter-section">
+        <div class="filter-title">⚔️ Тип урона</div>
+        <div class="filters-bar">
+            <button class="filter-btn reset" onclick="resetDamageFilter()">Сбросить</button>
+            <button class="filter-btn" data-category="BLOOD" onclick="filterByDamageCategory('BLOOD')">🩸 Кровотечение</button>
+            <button class="filter-btn" data-category="FROST" onclick="filterByDamageCategory('FROST')">❄️ Мороз</button>
+            <button class="filter-btn" data-category="POISON" onclick="filterByDamageCategory('POISON')">☠️ Яд</button>
+            <button class="filter-btn" data-category="RED_ROT" onclick="filterByDamageCategory('RED_ROT')">🦠 Алая гниль</button>
+            <button class="filter-btn" data-category="MAGIC" onclick="filterByDamageCategory('MAGIC')">✨ Магия</button>
+            <button class="filter-btn" data-category="FIRE" onclick="filterByDamageCategory('FIRE')">🔥 Огонь</button>
+            <button class="filter-btn" data-category="PHYSICAL" onclick="filterByDamageCategory('PHYSICAL')">⚔️ Физический</button>
+        </div>
+    </div>
+
+    <!-- Фильтр по классу оружия -->
+    <div class="filter-section">
+        <div class="filter-title">🗡️ Класс оружия</div>
+        <div class="filters-bar">
+            <button class="filter-btn reset" onclick="resetWeaponClassFilter()">Сбросить</button>
+            <button class="filter-btn" data-weaponclass="KATANA" onclick="filterByWeaponClass('KATANA')">⚔️ Катана</button>
+            <button class="filter-btn" data-weaponclass="GREAT_SWORD" onclick="filterByWeaponClass('GREAT_SWORD')">🗡️ Великий меч</button>
+            <button class="filter-btn" data-weaponclass="COLOSSAL_SWORD" onclick="filterByWeaponClass('COLOSSAL_SWORD')">⚔️ Колоссальный меч</button>
+            <button class="filter-btn" data-weaponclass="STRAIGHT_SWORD" onclick="filterByWeaponClass('STRAIGHT_SWORD')">⚔️ Прямой меч</button>
+            <button class="filter-btn" data-weaponclass="CURVED_SWORD" onclick="filterByWeaponClass('CURVED_SWORD')">🌀 Изогнутый меч</button>
+            <button class="filter-btn" data-weaponclass="THRUSTING_SWORD" onclick="filterByWeaponClass('THRUSTING_SWORD')">🗡️ Колющий меч</button>
+            <button class="filter-btn" data-weaponclass="DAGGER" onclick="filterByWeaponClass('DAGGER')">🔪 Кинжал</button>
+            <button class="filter-btn" data-weaponclass="TWINBLADE" onclick="filterByWeaponClass('TWINBLADE')">🌀 Двойной клинок</button>
+            <button class="filter-btn" data-weaponclass="SPEAR" onclick="filterByWeaponClass('SPEAR')">🏹 Копье</button>
+            <button class="filter-btn" data-weaponclass="GREAT_SPEAR" onclick="filterByWeaponClass('GREAT_SPEAR')">🏹 Великое копье</button>
+            <button class="filter-btn" data-weaponclass="HALBERD" onclick="filterByWeaponClass('HALBERD')">🪓 Алебарда</button>
+            <button class="filter-btn" data-weaponclass="HAMMER" onclick="filterByWeaponClass('HAMMER')">🔨 Молот</button>
+            <button class="filter-btn" data-weaponclass="GREAT_HAMMER" onclick="filterByWeaponClass('GREAT_HAMMER')">🔨 Великий молот</button>
+            <button class="filter-btn" data-weaponclass="AXE" onclick="filterByWeaponClass('AXE')">🪓 Топор</button>
+            <button class="filter-btn" data-weaponclass="GREAT_AXE" onclick="filterByWeaponClass('GREAT_AXE')">🪓 Великий топор</button>
+            <button class="filter-btn" data-weaponclass="FLAIL" onclick="filterByWeaponClass('FLAIL')">⛓️ Цеп</button>
+            <button class="filter-btn" data-weaponclass="WHIP" onclick="filterByWeaponClass('WHIP')">⛓️ Хлыст</button>
+            <button class="filter-btn" data-weaponclass="CLAW" onclick="filterByWeaponClass('CLAW')">🐾 Когти</button>
+            <button class="filter-btn" data-weaponclass="FIST" onclick="filterByWeaponClass('FIST')">👊 Кистевое</button>
+            <button class="filter-btn" data-weaponclass="REAPER" onclick="filterByWeaponClass('REAPER')">🌾 Коса</button>
+            <button class="filter-btn" data-weaponclass="BOW" onclick="filterByWeaponClass('BOW')">🏹 Лук</button>
+            <button class="filter-btn" data-weaponclass="LIGHT_BOW" onclick="filterByWeaponClass('LIGHT_BOW')">🏹 Легкий лук</button>
+            <button class="filter-btn" data-weaponclass="GREAT_BOW" onclick="filterByWeaponClass('GREAT_BOW')">🏹 Великий лук</button>
+            <button class="filter-btn" data-weaponclass="CROSSBOW" onclick="filterByWeaponClass('CROSSBOW')">🎯 Арбалет</button>
+            <button class="filter-btn" data-weaponclass="BALLISTA" onclick="filterByWeaponClass('BALLISTA')">🏰 Баллиста</button>
+            <button class="filter-btn" data-weaponclass="GLINTSTONE_STAFF" onclick="filterByWeaponClass('GLINTSTONE_STAFF')">🔮 Посох</button>
+            <button class="filter-btn" data-weaponclass="SACRED_SEAL" onclick="filterByWeaponClass('SACRED_SEAL')">✨ Священная печать</button>
+            <button class="filter-btn" data-weaponclass="SMALL_SHIELD" onclick="filterByWeaponClass('SMALL_SHIELD')">🛡️ Малый щит</button>
+            <button class="filter-btn" data-weaponclass="MEDIUM_SHIELD" onclick="filterByWeaponClass('MEDIUM_SHIELD')">🛡️ Средний щит</button>
+            <button class="filter-btn" data-weaponclass="GREAT_SHIELD" onclick="filterByWeaponClass('GREAT_SHIELD')">🛡️ Великий щит</button>
+        </div>
+    </div>
+
+    <!-- НОВЫЕ ФИЛЬТРЫ по шкалам урона -->
+    <div class="filter-section">
+        <div class="filter-title">📊 Фильтр по шкалам урона (Scaling)</div>
+        <div class="row">
+            <div class="col-md-2">
+                <div class="mb-2">
+                    <label class="form-label text-light small">💪 Сила (min)</label>
+                    <select id="filterStrength" class="form-control form-control-sm" onchange="applyScalingFilters()">
+                        <option value="NOT">Любой</option>
+                        <option value="E">E и выше</option>
+                        <option value="D">D и выше</option>
+                        <option value="C">C и выше</option>
+                        <option value="B">B и выше</option>
+                        <option value="A">A и выше</option>
+                        <option value="S">S</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-2">
+                    <label class="form-label text-light small">🏹 Ловкость (min)</label>
+                    <select id="filterDexterity" class="form-control form-control-sm" onchange="applyScalingFilters()">
+                        <option value="NOT">Любой</option>
+                        <option value="E">E и выше</option>
+                        <option value="D">D и выше</option>
+                        <option value="C">C и выше</option>
+                        <option value="B">B и выше</option>
+                        <option value="A">A и выше</option>
+                        <option value="S">S</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-2">
+                    <label class="form-label text-light small">🔮 Интеллект (min)</label>
+                    <select id="filterIntelligence" class="form-control form-control-sm" onchange="applyScalingFilters()">
+                        <option value="NOT">Любой</option>
+                        <option value="E">E и выше</option>
+                        <option value="D">D и выше</option>
+                        <option value="C">C и выше</option>
+                        <option value="B">B и выше</option>
+                        <option value="A">A и выше</option>
+                        <option value="S">S</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-2">
+                    <label class="form-label text-light small">✨ Вера (min)</label>
+                    <select id="filterFaith" class="form-control form-control-sm" onchange="applyScalingFilters()">
+                        <option value="NOT">Любой</option>
+                        <option value="E">E и выше</option>
+                        <option value="D">D и выше</option>
+                        <option value="C">C и выше</option>
+                        <option value="B">B и выше</option>
+                        <option value="A">A и выше</option>
+                        <option value="S">S</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-2">
+                    <label class="form-label text-light small">🩸 Аркана (min)</label>
+                    <select id="filterArcane" class="form-control form-control-sm" onchange="applyScalingFilters()">
+                        <option value="NOT">Любой</option>
+                        <option value="E">E и выше</option>
+                        <option value="D">D и выше</option>
+                        <option value="C">C и выше</option>
+                        <option value="B">B и выше</option>
+                        <option value="A">A и выше</option>
+                        <option value="S">S</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-2">
+                    <label class="form-label text-light small">&nbsp;</label>
+                    <button class="btn btn-sm btn-secondary w-100" onclick="resetScalingFilters()">Сбросить все шкалы</button>
+                </div>
+            </div>
+        </div>
+        <!-- Сортировка -->
+        <div class="filter-section">
+            <div class="filter-title">📊 Сортировка</div>
+            <div class="filters-bar">
+                <button class="filter-btn" data-sort="likes" onclick="setSortBy('likes')">❤️ По лайкам</button>
+                <button class="filter-btn" data-sort="date" onclick="setSortBy('date')">📅 По дате</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="createBtnContainer" class="text-center" style="display:none">
+        <button class="create-btn" data-bs-toggle="modal" data-bs-target="#createBuildModal">+ Create New Build</button>
+    </div>
+
+    <div id="buildsGrid" class="row"></div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="color: #ffd700;">Login</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="email" id="loginEmail" class="form-control mb-2" placeholder="Email">
+                <input type="password" id="loginPassword" class="form-control mb-2" placeholder="Password">
+                <div id="loginMessage" class="alert" style="display:none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="login()">Login</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="color: #ffd700;">Register</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="email" id="regEmail" class="form-control mb-2" placeholder="Email">
+                <input type="password" id="regPassword" class="form-control mb-2" placeholder="Password">
+                <div id="registerMessage" class="alert" style="display:none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="register()">Register</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Build Modal -->
+<div class="modal fade" id="createBuildModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="color: #ffd700;">Create New Build</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="buildForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Build Name</label>
+                                <input type="text" id="nameBuild" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea id="buildDescription" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Damage Category</label>
+                                <select id="damageCategory" class="form-control" required>
+                                    <option value="" disabled selected>-- Select Damage Category --</option>
+                                    <option value="BLOOD">🩸 Blood (Кровотечение)</option>
+                                    <option value="FROST">❄️ Frost (Мороз)</option>
+                                    <option value="POISON">☠️ Poison (Яд)</option>
+                                    <option value="RED_ROT">🦠 Scarlet Rot (Гниль)</option>
+                                    <option value="MAGIC">✨ Magic (Магия)</option>
+                                    <option value="FIRE">🔥 Fire (Огонь)</option>
+                                    <option value="PHYSICAL">⚔️ Physical (Физический)</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Класс оружия</label>
+                                <select id="weaponClass" class="form-control">
+                                    <option value="" disabled selected>-- Выберите класс оружия --</option>
+                                    <option value="STRAIGHT_SWORD">⚔️ Прямой меч</option>
+                                    <option value="GREAT_SWORD">🗡️ Великий меч</option>
+                                    <option value="COLOSSAL_SWORD">⚔️ Колоссальный меч</option>
+                                    <option value="CURVED_SWORD">🌀 Изогнутый меч</option>
+                                    <option value="THRUSTING_SWORD">🗡️ Колющий меч</option>
+                                    <option value="KATANA">⚔️ Катана</option>
+                                    <option value="TWINBLADE">🌀 Двойной клинок</option>
+                                    <option value="DAGGER">🔪 Кинжал</option>
+                                    <option value="SPEAR">🏹 Копье</option>
+                                    <option value="GREAT_SPEAR">🏹 Великое копье</option>
+                                    <option value="HALBERD">🪓 Алебарда</option>
+                                    <option value="HAMMER">🔨 Молот</option>
+                                    <option value="GREAT_HAMMER">🔨 Великий молот</option>
+                                    <option value="AXE">🪓 Топор</option>
+                                    <option value="GREAT_AXE">🪓 Великий топор</option>
+                                    <option value="FLAIL">⛓️ Цеп</option>
+                                    <option value="WHIP">⛓️ Хлыст</option>
+                                    <option value="FIST">👊 Кистевое</option>
+                                    <option value="CLAW">🐾 Когти</option>
+                                    <option value="REAPER">🌾 Коса</option>
+                                    <option value="LIGHT_BOW">🏹 Легкий лук</option>
+                                    <option value="BOW">🏹 Лук</option>
+                                    <option value="GREAT_BOW">🏹 Великий лук</option>
+                                    <option value="CROSSBOW">🎯 Арбалет</option>
+                                    <option value="BALLISTA">🏰 Баллиста</option>
+                                    <option value="GLINTSTONE_STAFF">🔮 Посох</option>
+                                    <option value="SACRED_SEAL">✨ Священная печать</option>
+                                    <option value="SMALL_SHIELD">🛡️ Малый щит</option>
+                                    <option value="MEDIUM_SHIELD">🛡️ Средний щит</option>
+                                    <option value="GREAT_SHIELD">🛡️ Великий щит</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Helmet</label>
+                                <input type="text" id="buildHelmet" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Armor</label>
+                                <input type="text" id="buildArmor" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Trousers</label>
+                                <input type="text" id="buildTrousers" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Gloves</label>
+                                <input type="text" id="buildGloves" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Left Weapon</label>
+                                <input type="text" id="buildLeft" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Left Weapon Ash</label>
+                                <input type="text" id="buildLeftAsh" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Right Weapon</label>
+                                <input type="text" id="buildRight" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Right Weapon Ash</label>
+                                <input type="text" id="buildRightAsh" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Шкалы урона -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">📊 Шкалы урона (Scaling)</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label class="form-label">💪 Сила</label>
+                                <select id="strengthScaling" class="form-control">
+                                    <option value="NOT">--</option>
+                                    <option value="S">⭐ S</option>
+                                    <option value="A">🅰️ A</option>
+                                    <option value="B">🅱️ B</option>
+                                    <option value="C">©️ C</option>
+                                    <option value="D">🇩 D</option>
+                                    <option value="E">🇪 E</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label class="form-label">🏹 Ловкость</label>
+                                <select id="dexterityScaling" class="form-control">
+                                    <option value="NOT">--</option>
+                                    <option value="S">⭐ S</option>
+                                    <option value="A">🅰️ A</option>
+                                    <option value="B">🅱️ B</option>
+                                    <option value="C">©️ C</option>
+                                    <option value="D">🇩 D</option>
+                                    <option value="E">🇪 E</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label class="form-label">🔮 Интеллект</label>
+                                <select id="intelligenceScaling" class="form-control">
+                                    <option value="NOT">--</option>
+                                    <option value="S">⭐ S</option>
+                                    <option value="A">🅰️ A</option>
+                                    <option value="B">🅱️ B</option>
+                                    <option value="C">©️ C</option>
+                                    <option value="D">🇩 D</option>
+                                    <option value="E">🇪 E</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label class="form-label">✨ Вера</label>
+                                <select id="faithScaling" class="form-control">
+                                    <option value="NOT">--</option>
+                                    <option value="S">⭐ S</option>
+                                    <option value="A">🅰️ A</option>
+                                    <option value="B">🅱️ B</option>
+                                    <option value="C">©️ C</option>
+                                    <option value="D">🇩 D</option>
+                                    <option value="E">🇪 E</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label class="form-label">🩸 Аркана</label>
+                                <select id="arcaneScaling" class="form-control">
+                                    <option value="NOT">--</option>
+                                    <option value="S">⭐ S</option>
+                                    <option value="A">🅰️ A</option>
+                                    <option value="B">🅱️ B</option>
+                                    <option value="C">©️ C</option>
+                                    <option value="D">🇩 D</option>
+                                    <option value="E">🇪 E</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Build Image</label>
+                        <input type="file" id="imageFile" class="form-control" accept="image/*" onchange="previewImage(this)">
+                        <div id="imagePreview" class="image-preview" style="display:none;">
+                            <img id="previewImg" alt="Preview">
+                            <div class="remove-image">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeImage()">Remove Image</button>
+                            </div>
+                        </div>
+                        <div id="uploadProgress" class="upload-progress">
+                            <div class="spinner-border spinner-border-sm text-light" role="status"></div>
+                            <span class="ms-2">Uploading...</span>
+                        </div>
+                        <input type="hidden" id="buildPreview">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createBuild()">Create Build</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/webjars/jquery/3.7.1/jquery.min.js"></script>
+<script src="/webjars/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API_URL = window.location.origin;
+    let showingMyBuilds = false;
+    let currentImageFile = null;
+    let allBuildsData = [];
+    let currentDamageFilter = null;
+    let currentWeaponClassFilter = null;
+
+    // Новые фильтры для шкал
+    let scalingFilters = {
+        strength: 'NOT',
+        dexterity: 'NOT',
+        intelligence: 'NOT',
+        faith: 'NOT',
+        arcane: 'NOT'
+    };
+
+    // Порядок уровней для сравнения (NOT самый низкий)
+    const levelOrder = { 'NOT': 0, 'E': 1, 'D': 2, 'C': 3, 'B': 4, 'A': 5, 'S': 6 };
+
+    function getToken() {
+        return localStorage.getItem('accessToken');
+    }
+
+    function isTokenValid() {
+        const token = getToken();
+        const expiry = localStorage.getItem('tokenExpiry');
+        if (!token) return false;
+        if (!expiry) return true;
+        return new Date().getTime() < parseInt(expiry);
+    }
+    // Добавьте в начало скрипта с другими переменными
+    let currentSortBy = 'likes';     // likes, date, name
+    let currentSortOrder = 'desc';    // desc, asc
+
+    // Функция установки сортировки
+    function setSortBy(sortField) {
+        if (currentSortBy === sortField) {
+            // Если тот же полe - меняем порядок
+            currentSortOrder = currentSortOrder === 'desc' ? 'asc' : 'desc';
+        } else {
+            currentSortBy = sortField;
+            currentSortOrder = 'desc'; // По умолчанию сначала самые большие
+        }
+
+        // Обновляем активное состояние кнопок
+        $('[data-sort]').removeClass('active');
+        $(`[data-sort="${sortField}"]`).addClass('active');
+
+        // Добавляем индикатор порядка
+        const orderIcon = currentSortOrder === 'desc' ? ' ↓' : ' ↑';
+        $(`[data-sort="${sortField}"]`).html(
+            $(`[data-sort="${sortField}"]`).html().replace(/[↓↑]/g, '') + orderIcon
+        );
+
+        // Применяем сортировку
+        applyAllFilters();
+    }
+
+    // Функция сортировки массива билдов
+    function sortBuilds(builds) {
+        return [...builds].sort((a, b) => {
+            let valA, valB;
+
+            switch (currentSortBy) {
+                case 'likes':
+                    valA = a.likesCount || 0;
+                    valB = b.likesCount || 0;
+                    break;
+                case 'date':
+                    valA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+                    valB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+                    break;
+                case 'name':
+                    valA = (a.name || '').toLowerCase();
+                    valB = (b.name || '').toLowerCase();
+                    break;
+                default:
+                    valA = a.likesCount || 0;
+                    valB = b.likesCount || 0;
+            }
+
+            if (currentSortOrder === 'desc') {
+                return valA > valB ? -1 : valA < valB ? 1 : 0;
+            } else {
+                return valA < valB ? -1 : valA > valB ? 1 : 0;
+            }
+        });
+    }
+    function updateNavbar() {
+        const token = localStorage.getItem('accessToken');
+        const expiry = localStorage.getItem('tokenExpiry');
+        const isValid = token && expiry && new Date().getTime() < parseInt(expiry);
+
+        if (isValid) {
+            $('#authButtons').hide();
+            $('#userInfoNav').show();
+            $('#navUserEmail').text(localStorage.getItem('userEmail'));
+            $('#createBtnContainer').show();
+        } else {
+            $('#authButtons').show();
+            $('#userInfoNav').hide();
+            $('#createBtnContainer').hide();
+        }
+    }
+
+    function showAllBuilds() {
+        showingMyBuilds = false;
+        $('#pageTitle').html('🏰 All Elden Ring Builds');
+        loadAllBuilds();
+    }
+
+    function showMyBuilds() {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            showLoginModal();
+            return;
+        }
+        showingMyBuilds = true;
+        $('#pageTitle').html('📝 My Elden Ring Builds');
+        loadMyBuilds();
+    }
+
+    // У вас уже есть console.log, добавьте больше деталей:
+    function loadAllBuilds() {
+        $('#buildsGrid').html('<div class="col-12 text-center text-info">Loading builds...</div>');
+
+        $.ajax({
+            url: API_URL + '/api/builds',
+            type: 'GET',
+            success: function(builds) {
+                console.log('Loaded builds:', builds);
+                allBuildsData = builds;
+                applyAllFilters();
+            },
+            error: function(xhr) {
+                console.error('Error details:', {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    responseText: xhr.responseText,
+                    responseJSON: xhr.responseJSON
+                });
+                $('#buildsGrid').html('<div class="col-12 text-center text-danger">Error loading builds: ' + (xhr.responseJSON?.message || xhr.statusText) + '</div>');
+            }
+        });
+    }
+
+    function loadMyBuilds() {
+        const token = localStorage.getItem('accessToken');
+
+        if (!token) {
+            $('#buildsGrid').html('<div class="col-12 text-center text-warning">Please login to view your builds</div>');
+            return;
+        }
+
+        $('#buildsGrid').html('<div class="col-12 text-center text-info">Loading your builds...</div>');
+
+        $.ajax({
+            url: API_URL + '/api/builds/my',
+            type: 'GET',
+            headers: { 'Authorization': 'Bearer ' + token },
+            success: function(builds) {
+                console.log('Loaded my builds:', builds);
+                allBuildsData = builds;
+                applyAllFilters();
+            },
+            error: function(xhr) {
+                if (xhr.status === 401 || xhr.status === 403) {
+                    $('#buildsGrid').html('<div class="col-12 text-center text-warning">Please login to view your builds</div>');
+                } else {
+                    $('#buildsGrid').html('<div class="col-12 text-center text-danger">Error loading builds</div>');
+                }
+            }
+        });
+    }
+
+    // Фильтры
+    function filterByDamageCategory(category) {
+        if (currentDamageFilter === category) {
+            currentDamageFilter = null;
+        } else {
+            currentDamageFilter = category;
+        }
+        applyAllFilters();
+        updateActiveStates();
+    }
+
+    function filterByWeaponClass(weaponClass) {
+        if (currentWeaponClassFilter === weaponClass) {
+            currentWeaponClassFilter = null;
+        } else {
+            currentWeaponClassFilter = weaponClass;
+        }
+        applyAllFilters();
+        updateActiveStates();
+    }
+
+    function applyScalingFilters() {
+        scalingFilters.strength = $('#filterStrength').val();
+        scalingFilters.dexterity = $('#filterDexterity').val();
+        scalingFilters.intelligence = $('#filterIntelligence').val();
+        scalingFilters.faith = $('#filterFaith').val();
+        scalingFilters.arcane = $('#filterArcane').val();
+        applyAllFilters();
+    }
+
+    function resetScalingFilters() {
+        $('#filterStrength, #filterDexterity, #filterIntelligence, #filterFaith, #filterArcane').val('NOT');
+        scalingFilters = {
+            strength: 'NOT',
+            dexterity: 'NOT',
+            intelligence: 'NOT',
+            faith: 'NOT',
+            arcane: 'NOT'
+        };
+        applyAllFilters();
+    }
+
+    function resetDamageFilter() {
+        currentDamageFilter = null;
+        applyAllFilters();
+        updateActiveStates();
+    }
+
+    function resetWeaponClassFilter() {
+        currentWeaponClassFilter = null;
+        applyAllFilters();
+        updateActiveStates();
+    }
+
+    function updateActiveStates() {
+        $('[data-category]').removeClass('active');
+        if (currentDamageFilter) $(`[data-category="${currentDamageFilter}"]`).addClass('active');
+
+        $('[data-weaponclass]').removeClass('active');
+        if (currentWeaponClassFilter) $(`[data-weaponclass="${currentWeaponClassFilter}"]`).addClass('active');
+    }
+
+    // Проверка是否符合 фильтру шкалы
+    function checkScalingFilter(buildScalingValue, filterValue) {
+        if (filterValue === 'NOT') return true;
+        const buildLevel = buildScalingValue || 'NOT';
+        return levelOrder[buildLevel] >= levelOrder[filterValue];
+    }
+
+    function applyAllFilters() {
+        let filteredBuilds = [...allBuildsData];
+
+        // Фильтр по категории урона
+        if (currentDamageFilter) {
+            filteredBuilds = filteredBuilds.filter(build => build.damageCategory === currentDamageFilter);
+        }
+
+        // Фильтр по классу оружия
+        if (currentWeaponClassFilter) {
+            filteredBuilds = filteredBuilds.filter(build => build.weaponClass === currentWeaponClassFilter);
+        }
+
+        // Фильтры по шкалам урона
+        filteredBuilds = filteredBuilds.filter(build => {
+            if (!checkScalingFilter(build.strengthScaling, scalingFilters.strength)) return false;
+            if (!checkScalingFilter(build.dexterityScaling, scalingFilters.dexterity)) return false;
+            if (!checkScalingFilter(build.intelligenceScaling, scalingFilters.intelligence)) return false;
+            if (!checkScalingFilter(build.faithScaling, scalingFilters.faith)) return false;
+            if (!checkScalingFilter(build.arcaneScaling, scalingFilters.arcane)) return false;
+            return true;
+        });
+
+        // ПРИМЕНЯЕМ СОРТИРОВКУ
+        filteredBuilds = sortBuilds(filteredBuilds);
+
+        console.log('Filtered builds count:', filteredBuilds.length);
+        displayBuilds(filteredBuilds, showingMyBuilds);
+    }
+
+    function previewImage(input) {
+        const file = input.files[0];
+        if (file) {
+            currentImageFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $('#previewImg').attr('src', e.target.result);
+                $('#imagePreview').show();
+                $('#uploadProgress').show();
+                uploadImage(file);
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function uploadImage(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const token = localStorage.getItem('accessToken');
+
+        if (!token) {
+            alert('Please login first');
+            return;
+        }
+
+        $('#uploadProgress').show();
+
+        $.ajax({
+            url: API_URL + '/api/builds/upload-image',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: { 'Authorization': 'Bearer ' + token },
+            success: function(response) {
+                if (response.url) {
+                    $('#buildPreview').val(response.url);
+                }
+                $('#uploadProgress').hide();
+            },
+            error: function(xhr) {
+                $('#uploadProgress').hide();
+                alert('Image upload failed');
+            }
+        });
+    }
+
+    function removeImage() {
+        currentImageFile = null;
+        $('#buildPreview').val('');
+        $('#previewImg').attr('src', '');
+        $('#imagePreview').hide();
+        $('#imageFile').val('');
+    }
+
+    // Функции для отображения
+    function getCategoryDisplay(category) {
+        const icons = { 'BLOOD': '🩸', 'FROST': '❄️', 'POISON': '☠️', 'RED_ROT': '🦠', 'MAGIC': '✨', 'FIRE': '🔥', 'PHYSICAL': '⚔️' };
+        const names = { 'BLOOD': 'Blood', 'FROST': 'Frost', 'POISON': 'Poison', 'RED_ROT': 'Rot', 'MAGIC': 'Magic', 'FIRE': 'Fire', 'PHYSICAL': 'Physical' };
+        return `${icons[category] || '❓'} ${names[category] || category || 'Not set'}`;
+    }
+
+    function getWeaponClassDisplay(weaponClass) {
+        if (!weaponClass) return null;
+        const names = {
+            'STRAIGHT_SWORD': '⚔️ Прямой меч', 'GREAT_SWORD': '🗡️ Великий меч', 'COLOSSAL_SWORD': '⚔️ Колоссальный',
+            'CURVED_SWORD': '🌀 Изогнутый', 'THRUSTING_SWORD': '🗡️ Колющий', 'KATANA': '⚔️ Катана',
+            'TWINBLADE': '🌀 Двойной клинок', 'DAGGER': '🔪 Кинжал', 'SPEAR': '🏹 Копье',
+            'GREAT_SPEAR': '🏹 Великое копье', 'HALBERD': '🪓 Алебарда', 'HAMMER': '🔨 Молот',
+            'GREAT_HAMMER': '🔨 Великий молот', 'AXE': '🪓 Топор', 'GREAT_AXE': '🪓 Великий топор',
+            'FLAIL': '⛓️ Цеп', 'WHIP': '⛓️ Хлыст', 'FIST': '👊 Кистевое', 'CLAW': '🐾 Когти',
+            'REAPER': '🌾 Коса', 'LIGHT_BOW': '🏹 Легкий лук', 'BOW': '🏹 Лук', 'GREAT_BOW': '🏹 Великий лук',
+            'CROSSBOW': '🎯 Арбалет', 'BALLISTA': '🏰 Баллиста', 'GLINTSTONE_STAFF': '🔮 Посох',
+            'SACRED_SEAL': '✨ Печать', 'SMALL_SHIELD': '🛡️ Малый щит', 'MEDIUM_SHIELD': '🛡️ Средний щит',
+            'GREAT_SHIELD': '🛡️ Великий щит'
+        };
+        return names[weaponClass] || weaponClass;
+    }
+
+    function getScalingBadges(build) {
+        const scalings = [
+            { key: 'strengthScaling', icon: '💪', name: 'Сила' },
+            { key: 'dexterityScaling', icon: '🏹', name: 'Ловкость' },
+            { key: 'intelligenceScaling', icon: '🔮', name: 'Интеллект' },
+            { key: 'faithScaling', icon: '✨', name: 'Вера' },
+            { key: 'arcaneScaling', icon: '🩸', name: 'Аркана' }
+        ];
+
+        let html = '';
+        for (let s of scalings) {
+            const level = build[s.key];
+            if (level && level !== 'NOT') {
+                html += `<span class="scaling-item">${s.icon} ${s.name}: ${level}</span>`;
+            }
+        }
+        return html ? `<div class="scaling-container">${html}</div>` : '';
+    }
+
+    function displayBuilds(builds, showDelete) {
+        const grid = $('#buildsGrid');
+        grid.empty();
+
+        if (!builds || builds.length === 0) {
+            grid.html(`<div class="col-12 text-center" style="color:#888;">No builds found</div>`);
+            return;
+        }
+
+        const currentUserId = localStorage.getItem('userId');
+
+        builds.forEach(build => {
+            let previewUrl = build.preview;
+            if (!previewUrl || previewUrl === 'null' || previewUrl === '') {
+                previewUrl = 'https://via.placeholder.com/300x200?text=No+Image';
+            }
+
+            const deleteBtn = showDelete ? `<button class="delete-btn" onclick="event.stopPropagation(); deleteBuild(${build.id})">🗑️ Delete</button>` : '';
+
+            const categoryDisplay = getCategoryDisplay(build.damageCategory);
+            const weaponClassDisplay = getWeaponClassDisplay(build.weaponClass);
+            const scalingBadges = getScalingBadges(build);
+
+            // Кнопка лайка
+            const likedClass = build.likedByCurrentUser ? 'liked' : '';
+            const likeIcon = build.likedByCurrentUser ? '❤️' : '🤍';
+
+            grid.append(`
+            <div class="col-md-4">
+                <div class="card build-card">
+                    ${deleteBtn}
+                    <div class="build-badge category-badge">${categoryDisplay}</div>
+                    ${weaponClassDisplay ? `<div class="build-badge weaponclass-badge">${weaponClassDisplay}</div>` : ''}
+                    ${scalingBadges}
+                    <img src="${previewUrl}" class="card-img-top" alt="${build.name}" onclick="viewBuild(${build.id})">
+                    <div class="card-body">
+                        <h5 class="card-title" onclick="viewBuild(${build.id})">${escapeHtml(build.name) || 'Unnamed'}</h5>
+                        <p class="card-text" onclick="viewBuild(${build.id})">${escapeHtml(build.description) || 'No description'}</p>
+                        <div class="equipment" onclick="viewBuild(${build.id})">
+                            <div><strong>⚔️ Right:</strong> ${escapeHtml(build.right) || '-'}</div>
+                            <div><strong>🛡️ Left:</strong> ${escapeHtml(build.left) || '-'}</div>
+                            <div><strong>🪖 Helmet:</strong> ${escapeHtml(build.helmet) || '-'}</div>
+                            <div><strong>👕 Armor:</strong> ${escapeHtml(build.armor) || '-'}</div>
+                            <div><strong>🧤 Gloves:</strong> ${escapeHtml(build.gloves) || '-'}</div>
+                            <div><strong>👖 Trousers:</strong> ${escapeHtml(build.trousers) || '-'}</div>
+                        </div>
+                        <div class="author">by ${escapeHtml(build.owner?.email) || 'Unknown'}</div>
+                    </div>
+                    <button class="like-btn ${likedClass}" onclick="event.stopPropagation(); toggleLike(${build.id}, this)">
+                        ${likeIcon} <span class="like-count">${build.likesCount || 0}</span>
+                    </button>
+                </div>
+            </div>
+        `);
+        });
+    }
+
+    // Функция для лайка
+    function toggleLike(buildId, button) {
+        const token = getToken();
+        if (!token || !isTokenValid()) {
+            alert('Please login to like builds');
+            showLoginModal();
+            return;
+        }
+
+        $.ajax({
+            url: API_URL + '/api/likes/' + buildId + '/toggle',
+            type: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            success: function(response) {
+                const $btn = $(button);
+                const $countSpan = $btn.find('.like-count');
+
+                if (response.liked) {
+                    $btn.addClass('liked');
+                    $btn.html('❤️ <span class="like-count">' + response.likesCount + '</span>');
+                } else {
+                    $btn.removeClass('liked');
+                    $btn.html('🤍 <span class="like-count">' + response.likesCount + '</span>');
+                }
+            },
+            error: function(xhr) {
+                console.error('Error toggling like:', xhr);
+                alert('Failed to toggle like');
+            }
+        });
+    }
+
+    function escapeHtml(text) {
+        if (!text) return text;
+        return String(text).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function deleteBuild(id) {
+        if (!confirm('Delete this build?')) return;
+        const token = localStorage.getItem('accessToken');
+        $.ajax({
+            url: API_URL + '/api/builds/' + id,
+            type: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token },
+            success: function() {
+                showingMyBuilds ? loadMyBuilds() : loadAllBuilds();
+            }
+        });
+    }
+
+    function createBuild() {
+        const token = getToken();
+        if (!token || !isTokenValid()) {
+            alert('Please login first');
+            showLoginModal();
+            return;
+        }
+
+        const buildData = {
+            name: $('#nameBuild').val(),
+            description: $('#buildDescription').val(),
+            preview: $('#buildPreview').val(),
+            helmet: $('#buildHelmet').val(),
+            armor: $('#buildArmor').val(),
+            trousers: $('#buildTrousers').val(),
+            gloves: $('#buildGloves').val(),
+            left: $('#buildLeft').val(),
+            right: $('#buildRight').val(),
+            leftAsh: $('#buildLeftAsh').val(),
+            rightAsh: $('#buildRightAsh').val(),
+            damageCategory: $('#damageCategory').val(),
+            weaponClass: $('#weaponClass').val(),
+            strengthScaling: $('#strengthScaling').val(),
+            dexterityScaling: $('#dexterityScaling').val(),
+            intelligenceScaling: $('#intelligenceScaling').val(),
+            faithScaling: $('#faithScaling').val(),
+            arcaneScaling: $('#arcaneScaling').val()
+        };
+
+        console.log('Sending build data:', buildData);
+
+        if (!buildData.name) {
+            alert('Please enter a build name');
+            return;
+        }
+
+        if (!buildData.damageCategory) {
+            alert('Please select a damage category');
+            return;
+        }
+
+        $.ajax({
+            url: API_URL + '/api/builds',
+            type: 'POST',
+            contentType: 'application/json',
+            headers: { 'Authorization': 'Bearer ' + token },
+            data: JSON.stringify(buildData),
+            success: function(response) {
+                $('#createBuildModal').modal('hide');
+                $('#buildForm')[0].reset();
+                removeImage();
+                showingMyBuilds ? loadMyBuilds() : loadAllBuilds();
+                alert('Build created successfully!');
+            },
+            error: function(xhr) {
+                console.error('Error creating build:', xhr);
+                alert('Error: ' + (xhr.responseJSON?.message || xhr.responseText));
+            }
+        });
+    }
+
+    function viewBuild(id) {
+        window.location.href = '/build/' + id;
+    }
+
+    // Auth functions
+    function showLoginModal() {
+        $('#loginEmail, #loginPassword').val('');
+        $('#loginMessage').hide();
+        $('#loginModal').modal('show');
+    }
+
+    function showRegisterModal() {
+        $('#regEmail, #regPassword').val('');
+        $('#registerMessage').hide();
+        $('#registerModal').modal('show');
+    }
+
+    function register() {
+        const email = $('#regEmail').val();
+        const password = $('#regPassword').val();
+        $.ajax({
+            url: API_URL + '/api/auth/register',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({email, password}),
+            success: function() {
+                $('#registerMessage').removeClass('alert-danger').addClass('alert-success').text('Registration successful! Please login.').show();
+                setTimeout(() => {
+                    $('#registerModal').modal('hide');
+                    showLoginModal();
+                }, 1500);
+            },
+            error: function(xhr) {
+                $('#registerMessage').removeClass('alert-success').addClass('alert-danger').text('Registration failed: ' + (xhr.responseJSON?.message || xhr.responseText)).show();
+            }
+        });
+    }
+
+    function login() {
+        const email = $('#loginEmail').val();
+        const password = $('#loginPassword').val();
+        $.ajax({
+            url: API_URL + '/api/auth/login',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({email, password}),
+            success: function(response) {
+                if (response.accessToken) {
+                    localStorage.setItem('accessToken', response.accessToken);
+                    localStorage.setItem('userEmail', email);
+                    const expiry = new Date();
+                    expiry.setHours(expiry.getHours() + 24);
+                    localStorage.setItem('tokenExpiry', expiry.getTime());
+                    updateNavbar();
+                    $('#loginModal').modal('hide');
+                    location.reload();
+                }
+            },
+            error: function(xhr) {
+                $('#loginMessage').removeClass('alert-success').addClass('alert-danger').text('Login failed: ' + (xhr.responseJSON?.message || xhr.responseText)).show();
+            }
+        });
+    }
+
+    function logout() {
+        localStorage.clear();
+        location.reload();
+    }
+
+    $(document).ready(function() {
+        updateNavbar();
+        loadAllBuilds();
+    });
+</script>
+</body>
+</html>

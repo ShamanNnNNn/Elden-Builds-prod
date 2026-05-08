@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Build Guide</title>
+    <link rel="stylesheet" href="/webjars/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #0d1117; }
+        .navbar { background: #1a1a2e !important; padding: 10px 0; }
+        .navbar-brand { color: #ffd700 !important; font-size: 1.5rem; font-weight: bold; }
+        .container-editor { background: #1a1a2e; border-radius: 10px; padding: 30px; margin-top: 30px; }
+        .guide-block {
+            background: #2c2c3e;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            border-left: 4px solid #ff6b35;
+        }
+        .block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #444;
+        }
+        .block-title {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .block-actions button {
+            background: none;
+            border: none;
+            color: #888;
+            margin-left: 10px;
+            transition: 0.3s;
+        }
+        .block-actions button:hover { color: #ffd700; }
+        .delete-block { color: #dc3545 !important; }
+        .delete-block:hover { color: #ff6b6b !important; }
+        .text-editor {
+            width: 100%;
+            min-height: 200px;
+            background: #1a1a2e;
+            color: #eee;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .text-editor:focus {
+            outline: none;
+            border-color: #ff6b35;
+        }
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 15px;
+            border-radius: 8px;
+        }
+        .add-block-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        .add-block-btn {
+            background: #2c2c3e;
+            color: #ffd700;
+            border: 1px solid #ff6b35;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .add-block-btn:hover {
+            background: #ff6b35;
+            color: white;
+        }
+        .btn-save {
+            background: #28a745;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+        }
+        .btn-save:hover { background: #34ce57; }
+        .upload-progress {
+            display: none;
+            margin-top: 10px;
+        }
+        .image-upload-btn {
+            background: #ff6b35;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg">
+    <div class="container">
+        <a class="navbar-brand" href="/">⚔️ Elden Builds</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a href="/build/1" class="btn-back" style="background: #ff6b35; color: white; border: none; padding: 5px 15px; border-radius: 5px;">← Back to Build</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container container-editor">
+    <h2 style="color: #ffd700; margin-bottom: 30px;"><i class="fas fa-edit"></i> Edit Build Guide</h2>
+
+    <div id="guideBlocks"></div>
+
+    <div class="add-block-buttons">
+        <button class="add-block-btn" onclick="addTextBlock()">+ Add Text Block</button>
+        <button class="add-block-btn" onclick="addImageBlock()">+ Add Image Block</button>
+    </div>
+
+    <button class="btn-save" onclick="saveGuide()"><i class="fas fa-save"></i> Save Guide</button>
+
+
+</div>
+
+<script src="/webjars/jquery/3.7.1/jquery.min.js"></script>
+<script src="/webjars/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API_URL = window.location.origin;
+    let buildId = null;
+    let blocks = [];
+
+    function getToken() {
+        return localStorage.getItem('accessToken');
+    }
+
+    function addTextBlock(content = '') {
+        blocks.push({
+            type: 'text',
+            content: content
+        });
+        renderBlocks();
+    }
+
+    function addImageBlock(imageUrl = '') {
+        blocks.push({
+            type: 'image',
+            url: imageUrl
+        });
+        renderBlocks();
+    }
+
+    function deleteBlock(index) {
+        if (confirm('Delete this block?')) {
+            blocks.splice(index, 1);
+            renderBlocks();
+        }
+    }
+
+    function moveUp(index) {
+        if (index > 0) {
+            [blocks[index - 1], blocks[index]] = [blocks[index], blocks[index - 1]];
+            renderBlocks();
+        }
+    }
+
+    function moveDown(index) {
+        if (index < blocks.length - 1) {
+            [blocks[index], blocks[index + 1]] = [blocks[index + 1], blocks[index]];
+            renderBlocks();
+        }
+    }
+
+    function updateTextContent(index, content) {
+        blocks[index].content = content;
+    }
+
+    function updateImageUrl(index, url) {
+        blocks[index].url = url;
+        renderBlocks();
+    }
+
+    function uploadImage(blockIndex, file) {
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        const token = getToken();
+
+        $(`#uploadProgress-${blockIndex}`).show();
+
+        $.ajax({
+            url: API_URL + '/api/builds/upload-image',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: { 'Authorization': 'Bearer ' + token },
+            success: function(response) {
+                if (response.url) {
+                    updateImageUrl(blockIndex, response.url);
+                }
+                $(`#uploadProgress-${blockIndex}`).hide();
+            },
+            error: function(xhr) {
+                $(`#uploadProgress-${blockIndex}`).hide();
+                alert('Upload failed: ' + (xhr.responseJSON?.error || xhr.responseText));
+            }
+        });
+    }
+
+    function renderBlocks() {
+        const container = $('#guideBlocks');
+        container.empty();
+
+        if (blocks.length === 0) {
+            container.html('<div class="text-center" style="color: #888; padding: 40px;">No blocks yet. Click "Add Text Block" or "Add Image Block" to start building your guide.</div>');
+            return;
+        }
+
+        blocks.forEach((block, index) => {
+            const blockHtml = `
+                <div class="guide-block" data-index="${index}">
+                    <div class="block-header">
+                        <span class="block-title">${block.type === 'text' ? '📝 Text Block' : '🖼️ Image Block'}</span>
+                        <div class="block-actions">
+                            <button onclick="moveUp(${index})" ${index === 0 ? 'disabled' : ''}><i class="fas fa-arrow-up"></i></button>
+                            <button onclick="moveDown(${index})" ${index === blocks.length - 1 ? 'disabled' : ''}><i class="fas fa-arrow-down"></i></button>
+                            <button class="delete-block" onclick="deleteBlock(${index})"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    ${block.type === 'text' ? `
+                        <textarea class="text-editor" onchange="updateTextContent(${index}, this.value)">${escapeHtml(block.content || '')}</textarea>
+                    ` : `
+                        <div>
+                            ${block.url ? `<img src="${block.url}" class="image-preview" alt="Preview">` : '<div style="color: #888;">No image selected</div>'}
+                            <input type="file" accept="image/*" onchange="uploadImage(${index}, this.files[0])" style="margin-top: 10px;">
+                            <div id="uploadProgress-${index}" class="upload-progress">Uploading...</div>
+                            ${block.url ? `<button class="image-upload-btn" onclick="updateImageUrl(${index}, '')">Remove Image</button>` : ''}
+                        </div>
+                    `}
+                </div>
+            `;
+            container.append(blockHtml);
+        });
+    }
+
+    function loadBuild() {
+        const path = window.location.pathname;
+        const parts = path.split('/');
+        buildId = parts[parts.length - 1];
+
+        console.log('=== LOAD BUILD EDITOR ===');
+        console.log('Build ID:', buildId);
+        console.log('Token:', getToken());
+        console.log('API URL:', API_URL + '/api/builds/' + buildId);
+
+        if (!buildId || isNaN(buildId)) {
+            alert('Invalid build ID');
+            window.location.href = '/';
+            return;
+        }
+
+        const token = getToken();
+
+        if (!token) {
+            alert('Please login to edit builds');
+            window.location.href = '/';
+            return;
+        }
+
+        $('#guideBlocks').html('<div class="text-center" style="color: #ffd700; padding: 40px;">Loading build data...</div>');
+
+        $.ajax({
+            url: API_URL + '/api/builds/' + buildId,
+            type: 'GET',
+            headers: { 'Authorization': 'Bearer ' + token },
+            success: function(build) {
+                console.log('Build loaded:', build);
+                if (build.guideContent) {
+                    try {
+                        blocks = JSON.parse(build.guideContent);
+                        console.log('Loaded blocks:', blocks);
+                    } catch(e) {
+                        console.error('Parse error:', e);
+                        blocks = [];
+                    }
+                } else {
+                    blocks = [];
+                }
+                renderBlocks();
+            },
+            error: function(xhr) {
+                console.error('AJAX Error:', {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    responseText: xhr.responseText
+                });
+                alert('Error loading build: ' + (xhr.responseJSON?.message || xhr.statusText));
+                window.location.href = '/';
+            }
+        });
+    }
+
+    function saveGuide() {
+        const token = getToken();
+
+        if (!token) {
+            alert('Please login to save');
+            window.location.href = '/';
+            return;
+        }
+
+        const guideContent = JSON.stringify(blocks);
+
+        // Сначала получаем текущий билд
+        $.ajax({
+            url: API_URL + '/api/builds/' + buildId,
+            type: 'GET',
+            headers: { 'Authorization': 'Bearer ' + token },
+            success: function(build) {
+                // Обновляем только guideContent
+                const updateData = {
+                    id: build.id,
+                    name: build.name,
+                    description: build.description,
+                    preview: build.preview,
+                    helmet: build.helmet,
+                    armor: build.armor,
+                    trousers: build.trousers,
+                    gloves: build.gloves,
+                    left: build.left,
+                    right: build.right,
+                    level: build.level,
+                    damageCategory: build.damageCategory,
+                    guideContent: guideContent
+                };
+
+                $.ajax({
+                    url: API_URL + '/api/builds/' + buildId,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    data: JSON.stringify(updateData),
+                    success: function() {
+                        alert('Guide saved successfully!');
+                        window.location.href = '/build/' + buildId;
+                    },
+                    error: function(xhr) {
+                        alert('Error saving guide: ' + (xhr.responseJSON?.message || xhr.responseText));
+                    }
+                });
+            },
+            error: function(xhr) {
+                alert('Error loading build: ' + (xhr.responseJSON?.message || xhr.responseText));
+            }
+        });
+    }
+
+    function escapeHtml(text) {
+        if (!text) return text;
+        return String(text).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    $(document).ready(function() {
+        loadBuild();
+    });
+</script>
+</body>
+</html>

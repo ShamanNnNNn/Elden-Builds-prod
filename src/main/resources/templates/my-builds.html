@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>My Elden Builds</title>
+    <link rel="stylesheet" href="/webjars/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        .container { margin-top: 30px; }
+        .hidden { display: none; }
+        .build-card {
+            margin-bottom: 25px;
+            transition: transform 0.2s;
+            height: 100%;
+        }
+        .build-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .card-img-top {
+            height: 200px;
+            object-fit: cover;
+            background: #2c3e2f;
+        }
+        .card-body {
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .card-title {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .equipment {
+            font-size: 0.85rem;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #444;
+        }
+        .equipment span {
+            color: #ffaa00;
+        }
+        .level-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff6b35;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        .nav-tabs {
+            border-bottom: 1px solid #444;
+            margin-bottom: 30px;
+        }
+        .nav-link {
+            color: #ffd700;
+            background: transparent;
+        }
+        .nav-link.active {
+            color: #fff;
+            background: #ff6b35;
+            border-color: #ff6b35;
+        }
+    </style>
+</head>
+<body style="background: #0d1117;">
+<div class="container">
+    <h1 class="text-center mb-4" style="color: #ffd700;">⚔️ Elden Builds ⚔️</h1>
+
+    <!-- Навигация -->
+    <ul class="nav nav-tabs justify-content-center">
+        <li class="nav-item">
+            <a class="nav-link" href="/builds">All Builds</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="/my-builds">My Builds</a>
+        </li>
+    </ul>
+
+    <!-- Кнопка создания билда -->
+    <div id="createBtnPanel" class="text-center mb-4 hidden">
+        <button class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#createBuildModal">
+            + Create New Build
+        </button>
+    </div>
+
+    <!-- Карточки билдов -->
+    <div id="buildsGrid" class="row"></div>
+</div>
+
+<!-- Modal для создания билда -->
+<div class="modal fade" id="createBuildModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="background: #1a1a2e; color: #eee;">
+            <div class="modal-header">
+                <h5 class="modal-title" style="color: #ffd700;">Create New Build</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <input type="text" id="nameBuild" class="form-control mb-2" placeholder="Build Name">
+                        <textarea id="buildDescription" class="form-control mb-2" placeholder="Description" rows="3"></textarea>
+                        <input type="text" id="buildPreview" class="form-control mb-2" placeholder="Image URL">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" id="buildHelmet" class="form-control mb-2" placeholder="Helmet">
+                        <input type="text" id="buildArmor" class="form-control mb-2" placeholder="Armor">
+                        <input type="text" id="buildTrousers" class="form-control mb-2" placeholder="Trousers">
+                        <input type="text" id="buildGloves" class="form-control mb-2" placeholder="Gloves">
+                        <input type="text" id="buildLeft" class="form-control mb-2" placeholder="Left Weapon">
+                        <input type="text" id="buildRight" class="form-control mb-2" placeholder="Right Weapon">
+
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createBuild()">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/webjars/jquery/3.7.1/jquery.min.js"></script>
+<script src="/webjars/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API_URL = 'http://localhost:9090';
+
+    function getToken() {
+        return localStorage.getItem('accessToken');
+    }
+
+    function isTokenValid() {
+        const token = getToken();
+        const expiry = localStorage.getItem('tokenExpiry');
+        if (!token) return false;
+        if (!expiry) return true;
+        return Date.now() < parseInt(expiry, 10);
+    }
+
+    function escapeHtml(text) {
+        if (!text) return text;
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function loadBuilds() {
+        const token = getToken();
+        const isValid = isTokenValid();
+
+        console.log('=== LOAD MY BUILDS ===');
+        console.log('Token exists:', !!token);
+        console.log('Token valid:', isValid);
+
+        if (!token || !isValid) {
+            console.log('No valid token, redirecting to login');
+            window.location.href = '/';
+            return;
+        }
+
+        $('#createBtnPanel').removeClass('hidden');
+        $('#buildsGrid').html('<div class="col-12 text-center text-info">Loading your builds...</div>');
+
+        $.ajax({
+            url: API_URL + '/api/builds/my',
+            type: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + token
+            },
+            success: function(builds) {
+                console.log('My builds received:', builds);
+                const grid = $('#buildsGrid');
+                grid.empty();
+
+                if (!builds || builds.length === 0) {
+                    grid.html('<div class="col-12 text-center" style="color:#888;">You haven\'t created any builds yet. Click "Create New Build" to get started!</div>');
+                    return;
+                }
+
+                builds.forEach(build => {
+                    let previewUrl = build.preview;
+                    if (!previewUrl || previewUrl === 'null' || previewUrl === '') {
+                        previewUrl = 'https://via.placeholder.com/300x200?text=No+Image';
+                    }
+
+                    grid.append(`
+                        <div class="col-md-4">
+                            <div class="card build-card">
+                                <button class="delete-btn" onclick="deleteBuild(${build.id})">🗑️ Delete</button>
+                                <div class="level-badge">Lv. ${build.level || '?'}</div>
+                                <img src="${previewUrl}"
+                                     class="card-img-top"
+                                     alt="${build.name}"
+                                     onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+                                <div class="card-body">
+                                    <h5 class="card-title">${escapeHtml(build.name) || 'Unnamed'}</h5>
+                                    <p class="card-text">${escapeHtml(build.description) || 'No description'}</p>
+                                    <div class="equipment">
+                                        <div>⚔️ <span>Right:</span> ${escapeHtml(build.rightWeapon) || '-'}</div>
+                                        <div>🛡️ <span>Left:</span> ${escapeHtml(build.leftWeapon) || '-'}</div>
+                                        <div>🪖 <span>Helmet:</span> ${escapeHtml(build.helmet) || '-'}</div>
+                                        <div>👕 <span>Armor:</span> ${escapeHtml(build.armor) || '-'}</div>
+                                        <div>🧤 <span>Gloves:</span> ${escapeHtml(build.gloves) || '-'}</div>
+                                        <div>👖 <span>Trousers:</span> ${escapeHtml(build.trousers) || '-'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                });
+            },
+            error: function(xhr) {
+                console.error('Error loading builds:', xhr.status, xhr.responseText);
+                $('#buildsGrid').html(`<div class="col-12 text-center text-danger">Error loading builds: ${xhr.status}</div>`);
+                if (xhr.status === 401 || xhr.status === 403) {
+                    localStorage.clear();
+                    window.location.href = '/';
+                }
+            }
+        });
+    }
+
+    function deleteBuild(id) {
+        if (!confirm('Are you sure you want to delete this build?')) return;
+
+        const token = getToken();
+        $.ajax({
+            url: API_URL + '/api/builds/' + id,
+            type: 'DELETE',
+            headers: {'Authorization': 'Bearer ' + token},
+            success: function() {
+                loadBuilds();
+                alert('Build deleted successfully!');
+            },
+            error: function(xhr) {
+                alert('Error deleting build: ' + (xhr.responseJSON?.message || xhr.responseText));
+            }
+        });
+    }
+
+    function createBuild() {
+        const token = getToken();
+
+        if (!token || !isTokenValid()) {
+            alert('Please login first');
+            window.location.href = '/';
+            return;
+        }
+
+        const buildData = {
+            name: $('#nameBuild').val(),
+            description: $('#buildDescription').val(),
+            preview: $('#buildPreview').val(),
+            helmet: $('#buildHelmet').val(),
+            armor: $('#buildArmor').val(),
+            trousers: $('#buildTrousers').val(),
+            gloves: $('#buildGloves').val(),
+            leftWeapon: $('#buildLeft').val(),
+            rightWeapon: $('#buildRight').val(),
+            level: parseInt($('#buildLevel').val()) || 1
+        };
+
+        console.log('Creating build:', buildData);
+
+        $.ajax({
+            url: API_URL + '/api/builds',
+            type: 'POST',
+            contentType: 'application/json',
+            headers: {'Authorization': 'Bearer ' + token},
+            data: JSON.stringify(buildData),
+            success: function(response) {
+                console.log('Build created:', response);
+                $('#createBuildModal').modal('hide');
+                $('#nameBuild, #buildDescription, #buildPreview, #buildHelmet, #buildArmor, #buildTrousers, #buildGloves, #buildLeft, #buildRight, #buildLevel').val('');
+                loadBuilds();
+                alert('Build created successfully!');
+            },
+            error: function(xhr) {
+                console.error('Error creating build:', xhr);
+                alert('Error: ' + (xhr.responseJSON?.message || xhr.responseText));
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        console.log('My Builds page loaded');
+
+        const token = getToken();
+        const expiry = localStorage.getItem('tokenExpiry');
+
+        if (!token || (expiry && new Date().getTime() > parseInt(expiry))) {
+            console.log('No valid token, redirecting to login');
+            localStorage.clear();
+            window.location.href = '/';
+            return;
+        }
+
+        loadBuilds();
+    });
+</script>
+</body>
+</html>
