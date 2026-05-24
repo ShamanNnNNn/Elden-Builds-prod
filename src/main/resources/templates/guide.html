@@ -25,7 +25,6 @@
         .btn-edit { background: #ffc107; color: #000; border: none; padding: 8px 20px; border-radius: 5px; margin-top: 20px; }
         .btn-edit:hover { background: #ffcd39; }
 
-        /* Scaling badges */
         .scaling-grid {
             display: flex;
             gap: 15px;
@@ -34,6 +33,57 @@
             padding: 15px;
             background: #2c2c3e;
             border-radius: 10px;
+        }
+        /* Добавьте в конец существующих стилей */
+
+        /* Текст в секциях гайда - белый */
+        .guide-text-block {
+            color: #ffffff !important;
+            background: #2c2c3e;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .guide-text-block p,
+        .guide-text-block span,
+        .guide-text-block div {
+            color: #ffffff !important;
+        }
+
+        /* Заголовки в гайде */
+        .guide-content h1,
+        .guide-content h2,
+        .guide-content h3,
+        .guide-content h4 {
+            color: #ffd700 !important;
+        }
+
+        /* Обычный текст в гайде */
+        .guide-content p,
+        .guide-content li,
+        .guide-content span {
+            color: #ffffff !important;
+        }
+
+        /* Для всего контента гайда */
+        .guide-content * {
+            color: #ffffff;
+        }
+
+        /* Специфично для текстовых блоков */
+        .guide-text-block {
+            color: #ffffff;
+        }
+
+        /* Ссылки в гайде */
+        .guide-content a {
+            color: #ff6b35;
+        }
+
+        .guide-content a:hover {
+            color: #ff8c5a;
         }
         .scaling-item {
             text-align: center;
@@ -46,7 +96,7 @@
         }
         .scaling-label {
             font-size: 11px;
-            color: #888;
+            color: #eee;
         }
         .scaling-value {
             font-size: 20px;
@@ -57,7 +107,6 @@
         .scaling-value.A { color: #ff8c5a; }
         .scaling-value.B { color: #ffd700; }
 
-        /* Like button */
         .like-btn {
             position: absolute;
             bottom: 20px;
@@ -92,7 +141,6 @@
             font-size: 14px;
         }
 
-        /* Комментарии */
         .comments-section {
             background: #1a1a2e;
             border-radius: 10px;
@@ -105,6 +153,12 @@
             padding: 12px 15px;
             margin-bottom: 10px;
         }
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
         .comment-author {
             color: #ffd700;
             font-weight: bold;
@@ -113,13 +167,31 @@
         .comment-date {
             color: #888;
             font-size: 11px;
-            margin-left: 10px;
         }
         .comment-text {
             color: #eee;
             margin-top: 5px;
             font-size: 14px;
+            line-height: 1.4;
         }
+        .comment-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 10px;
+        }
+        .comment-like-btn, .comment-delete-btn {
+            background: none;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0;
+        }
+        .comment-like-btn { color: #888; }
+        .comment-like-btn:hover { color: #ff6b35; }
+        .comment-like-btn.liked { color: #ff6b35; }
+        .comment-delete-btn { color: #dc3545; }
+        .comment-delete-btn:hover { color: #c82333; }
+
         .comment-input {
             background: #2c2c3e;
             border: 1px solid #444;
@@ -140,23 +212,10 @@
             padding: 8px 20px;
             border-radius: 8px;
             margin-top: 10px;
+            cursor: pointer;
         }
         .btn-comment:hover { background: #ff8c5a; }
-
-        /* Talismans */
-        .talisman-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .talisman-item {
-            background: #2c2c3e;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            color: #ffd700;
-        }
+        .no-comments { text-align: center; color: #888; padding: 20px; }
     </style>
 </head>
 <body>
@@ -175,6 +234,20 @@
 
 <div class="container mt-4" id="buildDetail">
     <div class="loading">Loading build...</div>
+</div>
+
+<!-- Секция комментариев -->
+<div id="commentsContainer" class="comments-section" style="margin-top: 20px;">
+    <h4 style="color: #ffd700;">💬 Комментарии (<span id="commentsCount">0</span>)</h4>
+    <div id="commentsList"></div>
+
+    <div id="commentFormSection" class="mt-3">
+        <textarea id="commentContent" class="comment-input" rows="3" placeholder="Напишите комментарий..."></textarea>
+        <button class="btn-comment" onclick="addComment()">✏️ Отправить</button>
+    </div>
+    <div id="loginToComment" class="text-center mt-3" style="display: none;">
+        <a href="#" onclick="showLoginModal()">Войдите</a>, чтобы оставить комментарий
+    </div>
 </div>
 
 <script src="/webjars/jquery/3.7.1/jquery.min.js"></script>
@@ -201,6 +274,11 @@
         return userEmail && buildOwnerEmail === userEmail;
     }
 
+    function isCommentOwner(commentAuthorEmail) {
+        const userEmail = localStorage.getItem('userEmail');
+        return userEmail && commentAuthorEmail === userEmail;
+    }
+
     function escapeHtml(text) {
         if (!text) return text;
         return String(text).replace(/[&<>]/g, function(m) {
@@ -211,30 +289,6 @@
         });
     }
 
-    // Получение иконки для шкалы
-    function getScalingIcon(stat) {
-        const icons = {
-            'strengthScaling': '💪',
-            'dexterityScaling': '🏹',
-            'intelligenceScaling': '🔮',
-            'faithScaling': '✨',
-            'arcaneScaling': '🩸'
-        };
-        return icons[stat] || '📊';
-    }
-
-    function getScalingLabel(stat) {
-        const labels = {
-            'strengthScaling': 'Сила',
-            'dexterityScaling': 'Ловкость',
-            'intelligenceScaling': 'Интеллект',
-            'faithScaling': 'Вера',
-            'arcaneScaling': 'Аркана'
-        };
-        return labels[stat] || stat;
-    }
-
-    // Рендер шкал урона
     function renderScaling(build) {
         const scalings = [
             { key: 'strengthScaling', icon: '💪', name: 'Сила' },
@@ -261,7 +315,6 @@
         return html;
     }
 
-    // Рендер контента гайда
     function renderGuideContent(content) {
         if (!content) {
             return '<p class="text-muted">No guide written yet. Click "Edit Guide" to add detailed instructions, boss strategies, and tips!</p>';
@@ -288,11 +341,9 @@
                     </div>`;
             }
         });
-
         return html;
     }
 
-    // Лайк
     function toggleLike() {
         const token = getToken();
         if (!token || !isTokenValid()) {
@@ -326,11 +377,156 @@
         });
     }
 
-    // Загрузка билда
+    // ========== КОММЕНТАРИИ ==========
+    function loadComments() {
+        console.log('Loading comments for buildId:', buildId);
+
+        $.ajax({
+            url: `${API_URL}/api/builds/${buildId}/comments?page=0&size=20`,
+            type: 'GET',
+            success: function(response) {
+                console.log('Comments loaded:', response);
+                displayComments(response.content);
+                $('#commentsCount').text(response.totalElements);
+
+                const token = getToken();
+                if (token && isTokenValid()) {
+                    $('#commentFormSection').show();
+                    $('#loginToComment').hide();
+                } else {
+                    $('#commentFormSection').hide();
+                    $('#loginToComment').show();
+                }
+            },
+            error: function(xhr) {
+                console.error('Error loading comments:', xhr);
+                $('#commentsList').html('<div class="no-comments">❌ Error loading comments</div>');
+            }
+        });
+    }
+
+    function displayComments(comments) {
+        const container = $('#commentsList');
+        container.empty();
+
+        console.log('Displaying comments, count:', comments.length);
+
+        if (!comments || comments.length === 0) {
+            container.html('<div class="no-comments">💭 No comments yet. Be the first!</div>');
+            return;
+        }
+
+        comments.forEach(comment => {
+            const isOwnerFlag = isCommentOwner(comment.author.email);
+            const deleteBtn = isOwnerFlag ?
+                `<button class="comment-delete-btn" onclick="deleteComment(${comment.id})">🗑️</button>` : '';
+
+            const commentHtml = `
+                <div class="comment" id="comment-${comment.id}">
+                    <div class="comment-header">
+                        <span class="comment-author">✍️ ${escapeHtml(comment.author.email)}</span>
+                        <span class="comment-date">📅 ${new Date(comment.createdAt).toLocaleString()}</span>
+                    </div>
+                    <div class="comment-text">💬 ${escapeHtml(comment.content)}</div>
+                    <div class="comment-actions">
+                        <button class="comment-like-btn" onclick="likeComment(${comment.id})">❤️ ${comment.likesCount || 0}</button>
+                        ${deleteBtn}
+                    </div>
+                </div>
+            `;
+            container.append(commentHtml);
+        });
+    }
+
+    function addComment() {
+        const content = $('#commentContent').val();
+        if (!content.trim()) {
+            alert('Напишите комментарий');
+            return;
+        }
+
+        const token = getToken();
+        if (!token || !isTokenValid()) {
+            alert('Войдите чтобы комментировать');
+            showLoginModal();
+            return;
+        }
+
+        $.ajax({
+            url: `${API_URL}/api/builds/${buildId}/comments`,
+            type: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({ content: content.trim() }),
+            success: function() {
+                $('#commentContent').val('');
+                loadComments();
+            },
+            error: function(xhr) {
+                console.error('Error:', xhr);
+                if (xhr.status === 401) {
+                    alert('Пожалуйста, войдите снова');
+                    localStorage.clear();
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + (xhr.responseJSON?.message || 'Не удалось отправить комментарий'));
+                }
+            }
+        });
+    }
+
+    function deleteComment(commentId) {
+        if (!confirm('Delete this comment?')) return;
+
+        const token = getToken();
+        $.ajax({
+            url: `${API_URL}/api/builds/${buildId}/comments/${commentId}`,
+            type: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token },
+            success: function() {
+                loadComments();
+            },
+            error: function(xhr) {
+                alert('Error: ' + (xhr.responseJSON?.message || 'Failed to delete comment'));
+            }
+        });
+    }
+
+    function likeComment(commentId) {
+        const token = getToken();
+        if (!token || !isTokenValid()) {
+            alert('Please login to like comments');
+            return;
+        }
+
+        $.ajax({
+            url: `${API_URL}/api/builds/${buildId}/comments/${commentId}/like`,
+            type: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            success: function() {
+                loadComments();
+            },
+            error: function(xhr) {
+                console.error('Error liking comment:', xhr);
+            }
+        });
+    }
+
+    function showLoginModal() {
+        $('#loginEmail, #loginPassword').val('');
+        $('#loginMessage').hide();
+        $('#loginModal').modal('show');
+    }
+
+    // ========== ЗАГРУЗКА БИЛДА ==========
     function loadBuild() {
         const path = window.location.pathname;
         const parts = path.split('/');
         buildId = parts[parts.length - 1];
+
+        console.log('Loading build ID:', buildId);
 
         if (!buildId || isNaN(buildId)) {
             $('#buildDetail').html('<div class="alert alert-danger">Invalid build ID</div>');
@@ -345,16 +541,18 @@
             type: 'GET',
             headers: headers,
             success: function(build) {
+                console.log('Build loaded:', build);
                 currentBuild = build;
                 displayBuild(build, !!token);
+                loadComments();
             },
             error: function(xhr) {
+                console.error('Error loading build:', xhr);
                 $('#buildDetail').html('<div class="alert alert-danger">Error loading build: ' + (xhr.responseJSON?.message || xhr.statusText) + '</div>');
             }
         });
     }
 
-    // Отображение билда
     function displayBuild(build, isLoggedIn) {
         const isOwnerFlag = isLoggedIn && isOwner(build.owner?.email);
         const previewUrl = build.preview && build.preview !== 'null' && build.preview !== ''
@@ -368,7 +566,6 @@
         const categoryIcon = categoryIcons[build.damageCategory] || '❓';
         const categoryName = build.damageCategory || 'NOT';
 
-        // Класс оружия
         const weaponClassNames = {
             'KATANA': '⚔️ Катана', 'GREAT_SWORD': '🗡️ Великий меч', 'COLOSSAL_SWORD': '⚔️ Колоссальный меч',
             'STRAIGHT_SWORD': '⚔️ Прямой меч', 'DAGGER': '🔪 Кинжал', 'SPEAR': '🏹 Копье',
@@ -380,18 +577,11 @@
             ? `<span class="weapon-badge">${weaponClassNames[build.weaponClass] || build.weaponClass}</span>`
             : '';
 
-        // Шкалы урона
         const scalingHtml = renderScaling(build);
-
-        // Гайд
         const guideHtml = renderGuideContent(build.guideContent);
-
-        // Кнопка лайка
         const likedClass = build.likedByCurrentUser ? 'liked' : '';
         const likeIcon = build.likedByCurrentUser ? '❤️' : '🤍';
         const likeCount = build.likesCount || 0;
-
-        // Кнопка редактирования
         const editButton = isOwnerFlag ? `<div class="text-center"><a href="/build-editor/${build.id}" class="btn btn-edit"><i class="fas fa-edit"></i> Edit Guide</a></div>` : '';
 
         const html = `
@@ -408,10 +598,8 @@
                         ${weaponClassDisplay}
                     </div>
                     <p><strong>Description:</strong><br>${escapeHtml(build.description) || 'No description'}</p>
-
                     <h5 style="color: #ffd700; margin-top: 20px;">📊 Scaling</h5>
                     ${scalingHtml}
-
                     <h5 style="color: #ffd700; margin-top: 20px;">⚔️ Equipment</h5>
                     <ul class="stats-list">
                         <li><strong>Right Weapon:</strong> ${escapeHtml(build.right) || '-'}</li>
@@ -423,7 +611,6 @@
                         <li><strong>Gloves:</strong> ${escapeHtml(build.gloves) || '-'}</li>
                         <li><strong>Trousers:</strong> ${escapeHtml(build.trousers) || '-'}</li>
                     </ul>
-
                     <div class="author mt-3"><small>by ${escapeHtml(build.owner?.email) || 'Unknown'}</small></div>
                     ${editButton}
                 </div>
@@ -436,13 +623,62 @@
             </div>
         </div>
         `;
-
         $('#buildDetail').html(html);
     }
 
     $(document).ready(function() {
+        console.log('Document ready, loading build...');
         loadBuild();
     });
+</script>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background: #1a1a2e; color: #eee;">
+            <div class="modal-header">
+                <h5 class="modal-title" style="color: #ffd700;">Login</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="email" id="loginEmail" class="form-control mb-2" placeholder="Email">
+                <input type="password" id="loginPassword" class="form-control mb-2" placeholder="Password">
+                <div id="loginMessage" class="alert" style="display:none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="login()">Login</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function login() {
+        const email = $('#loginEmail').val();
+        const password = $('#loginPassword').val();
+
+        $.ajax({
+            url: API_URL + '/api/auth/login',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({email, password}),
+            success: function(response) {
+                if (response.accessToken) {
+                    localStorage.setItem('accessToken', response.accessToken);
+                    localStorage.setItem('userEmail', email);
+                    const expiry = new Date();
+                    expiry.setHours(expiry.getHours() + 24);
+                    localStorage.setItem('tokenExpiry', expiry.getTime());
+                    $('#loginModal').modal('hide');
+                    location.reload();
+                }
+            },
+            error: function(xhr) {
+                $('#loginMessage').removeClass('alert-success').addClass('alert-danger').text('Login failed: ' + (xhr.responseJSON?.message || xhr.responseText)).show();
+            }
+        });
+    }
 </script>
 </body>
 </html>

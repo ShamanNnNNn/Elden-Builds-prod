@@ -35,53 +35,46 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         System.out.println("JwtAuthFilter - Method: " + method + ", URI: " + uri);
 
-        // Public API: allow only list and guide endpoints without token.
-        boolean isPublicBuildsList = method.equals("GET") && uri.equals("/api/builds");
-        boolean isPublicBuildById = method.equals("GET") && uri.matches("^/api/builds/\\d+$");
-        if (isPublicBuildsList || isPublicBuildById) {
+        if (method.equals("GET") && (
+                uri.equals("/api/builds") ||
+                        uri.matches("^/api/builds/\\d+$") ||
+                        uri.matches("^/api/builds/\\d+/comments$")
+        )) {
             System.out.println("Public GET endpoint, skipping auth");
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Пропускаем страницы билда (HTML)
-        if (uri.startsWith("/build/") || uri.startsWith("/build-editor/")) {
-            System.out.println("Build page, skipping auth");
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        // Пропускаем публичные страницы и статику
         if (uri.equals("/") || uri.equals("/index") || uri.equals("/builds") ||
                 uri.equals("/builds-page") || uri.equals("/my-builds") || uri.equals("/moderation") ||
+                uri.startsWith("/build/") || uri.startsWith("/build-editor/") ||
                 uri.startsWith("/webjars/") || uri.startsWith("/uploads/") ||
-                uri.startsWith("/api/auth/") || uri.startsWith("/h2-console")) {
-            System.out.println("Public path, skipping auth");
-            filterChain.doFilter(request, response);
-            return;
-        }
+                uri.startsWith("/api/auth/") || uri.startsWith("/h2-console") ||
+                uri.startsWith("/swagger-ui") || uri.startsWith("/v3/api-docs")) {
+            System.out.println("Public path, checking token if exists");
 
-        // Для всех остальных запросов (POST, PUT, DELETE) проверяем токен
-        final String authHeader = request.getHeader("Authorization");
+        } else {
+            final String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println("No valid Bearer token found - returning 401");
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing or invalid token");
-            return;
-        }
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                System.out.println("No valid Bearer token found - returning 401");
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing or invalid token");
+                return;
+            }
 
-        final String jwt = authHeader.substring(7);
-        final String userEmail = jwtService.extractUsername(jwt);
+            final String jwt = authHeader.substring(7);
+            final String userEmail = jwtService.extractUsername(jwt);
 
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities()
-                );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-                System.out.println("Authentication set for user: " + userEmail);
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities()
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    System.out.println("Authentication set for user: " + userEmail);
+                }
             }
         }
 

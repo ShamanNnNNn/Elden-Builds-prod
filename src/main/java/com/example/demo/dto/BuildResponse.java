@@ -29,6 +29,7 @@ public class BuildResponse {
     private int likesCount;
     private boolean likedByCurrentUser;
     private String createdAt;
+    private long commentsCount;
 
 
     public Long getId() {
@@ -203,5 +204,12 @@ public class BuildResponse {
 
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
+    }
+    public long getCommentsCount() {
+        return commentsCount;
+    }
+
+    public void setCommentsCount(long commentsCount) {
+        this.commentsCount = commentsCount;
     }
 }

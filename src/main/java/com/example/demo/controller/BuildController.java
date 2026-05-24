@@ -4,6 +4,7 @@ import com.example.demo.dto.BuildRequest;
 import com.example.demo.dto.BuildResponse;
 import com.example.demo.model.Build;
 import com.example.demo.model.User;
+import com.example.demo.repository.CommentRepository;
 import com.example.demo.repository.LikeRepository;
 import com.example.demo.service.BuildService;
 import jakarta.validation.Valid;
@@ -32,7 +33,10 @@ public class BuildController {
 
     @Autowired
     private LikeRepository likeRepository;
-    // GET /api/builds - получить ТОЛЬКО ОДОБРЕННЫЕ билды
+
+    @Autowired
+    private CommentRepository commentRepository;
+
     @GetMapping
     public ResponseEntity<List<BuildResponse>> getApprovedBuilds() {
         System.out.println("=== getApprovedBuilds called ===");
@@ -49,19 +53,21 @@ public class BuildController {
                 .orElseThrow(() -> new RuntimeException("Build not found"));
         return ResponseEntity.ok(toResponse(build));
     }
-    // GET /api/builds/my - получить билды текущего пользователя (все статусы)
     @GetMapping("/my")
-    public ResponseEntity<List<BuildResponse>> getMyBuilds(@AuthenticationPrincipal User user) {
-        System.out.println("=== getMyBuilds called ===");
-        List<Build> builds = buildService.getBuildsByUser(user);
-        List<BuildResponse> responses = builds.stream()
-                .map(this::toResponse)
-                .toList();
-        return ResponseEntity.ok(responses);
+    public ResponseEntity<List<BuildResponse>> getMyBuilds(
+            @AuthenticationPrincipal User user,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Build.BuildDamageCategory damage,
+            @RequestParam(required = false) Build.BuildWeaponClass weaponClass,
+            @RequestParam(required = false) Build.BuildStatus status,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        List<Build> builds = buildService.getMyBuilds(user, search, damage, weaponClass, status, sortBy, sortDir);
+        return ResponseEntity.ok(builds.stream().map(this::toResponse).toList());
     }
 
 
-    // POST /api/builds - создать билд (статус PENDING)
     @PostMapping
     public ResponseEntity<BuildResponse> createBuild(@Valid @RequestBody BuildRequest request, @AuthenticationPrincipal User user) {
         Build build = toEntity(request);
@@ -80,7 +86,6 @@ public class BuildController {
         Build updated = buildService.updateBuild(build, user);
         return ResponseEntity.ok(toResponse(updated));
     }
-    // POST /api/builds/upload-image - загрузка изображения
     @PostMapping("/upload-image")
     public ResponseEntity<?> uploadImage(
             @RequestParam("file") MultipartFile file,
@@ -105,7 +110,6 @@ public class BuildController {
         }
     }
 
-    // GET /api/builds/pending - для модерации (только ADMIN)
     @GetMapping("/pending")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<BuildResponse>> getPendingBuilds() {
@@ -113,7 +117,6 @@ public class BuildController {
         return ResponseEntity.ok(builds.stream().map(this::toResponse).toList());
     }
 
-    // PUT /api/builds/{id}/approve - одобрить билд (только ADMIN)
     @PutMapping("/{id}/approve")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BuildResponse> approveBuild(@PathVariable Long id) {
@@ -121,7 +124,6 @@ public class BuildController {
         return ResponseEntity.ok(toResponse(approved));
     }
 
-    // PUT /api/builds/{id}/reject - отклонить билд (только ADMIN)
     @PutMapping("/{id}/reject")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> rejectBuild(@PathVariable Long id) {
@@ -129,7 +131,6 @@ public class BuildController {
         return ResponseEntity.noContent().build();
     }
 
-    // DELETE /api/builds/{id} - удалить билд
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBuild(@PathVariable Long id, @AuthenticationPrincipal User user) {
         buildService.deleteBuild(id, user);
@@ -161,6 +162,8 @@ public class BuildController {
         response.setFaithScaling(build.getFaithScaling() != null ? build.getFaithScaling().toString() : "NOT");
         response.setArcaneScaling(build.getArcaneScaling() != null ? build.getArcaneScaling().toString() : "NOT");
         response.setLikesCount(build.getLikesCount());
+        long commentsCount = commentRepository.countByBuildId(build.getId());
+        response.setCommentsCount(commentsCount);
         if (build.getOwner() != null) {
             response.setOwner(build.getOwner());
         }

@@ -10,12 +10,20 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskuser -d taskdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   app:
-    image: demo8-app:latest
+    build: .
     container_name: taskapi-app
     ports:
       - "9090:8080"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/taskdb
@@ -23,8 +31,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: taskpass
       JWT_SECRET: myProductionJwtSecretKeyThatIsAtLeast32CharsLong123
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:
-    name: eldenbuilds_data

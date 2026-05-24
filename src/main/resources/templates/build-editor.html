@@ -260,7 +260,6 @@
         const parts = path.split('/');
         buildId = parts[parts.length - 1];
 
-        console.log('=== LOAD BUILD EDITOR ===');
         console.log('Build ID:', buildId);
         console.log('Token:', getToken());
         console.log('API URL:', API_URL + '/api/builds/' + buildId);
@@ -323,13 +322,11 @@
 
         const guideContent = JSON.stringify(blocks);
 
-        // Сначала получаем текущий билд
         $.ajax({
             url: API_URL + '/api/builds/' + buildId,
             type: 'GET',
             headers: { 'Authorization': 'Bearer ' + token },
             success: function(build) {
-                // Обновляем только guideContent
                 const updateData = {
                     id: build.id,
                     name: build.name,

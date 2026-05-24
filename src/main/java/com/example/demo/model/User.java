@@ -31,7 +31,6 @@ public class User implements UserDetails {
         this.role = role;
     }
 
-    // Геттеры и сеттеры
     public Long getId() {
         return id;
     }

@@ -3,15 +3,102 @@
 <head>
     <title>Moderation - Elden Builds</title>
     <link rel="stylesheet" href="/webjars/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { background: #0d1117; }
-        .navbar { background: #1a1a2e !important; }
-        .navbar-brand, .nav-link { color: #ffd700 !important; }
-        .card { background: #1a1a2e; color: #eee; margin-bottom: 20px; }
-        .btn-approve { background: #28a745; color: white; }
-        .btn-reject { background: #dc3545; color: white; }
-        .pending-badge { background: #ffc107; color: #000; }
-        .build-img { max-height: 150px; object-fit: cover; }
+        .navbar { background: #1a1a2e !important; padding: 10px 0; }
+        .navbar-brand { color: #ffd700 !important; font-size: 1.5rem; font-weight: bold; }
+        .nav-link { color: #ffd700 !important; }
+        .nav-link:hover { color: #ff8c5a !important; }
+
+        .build-card {
+            margin-bottom: 25px;
+            transition: transform 0.2s;
+            height: 100%;
+            cursor: pointer;
+            position: relative;
+        }
+        .build-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .card-img-top {
+            height: 200px;
+            object-fit: cover;
+            background: #2c3e2f;
+        }
+        .card-body {
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .card-title {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .equipment {
+            font-size: 0.85rem;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #444;
+        }
+        .equipment div {
+            margin-bottom: 4px;
+        }
+        .pending-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ffc107;
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .category-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #ff6b35;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .moderation-buttons {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+        .moderation-buttons button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .btn-approve {
+            background: #28a745;
+            color: white;
+        }
+        .btn-approve:hover { background: #34ce57; }
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-reject:hover { background: #c82333; }
+        .author {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 10px;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -20,17 +107,20 @@
         <a class="navbar-brand" href="/">⚔️ Elden Builds</a>
         <div class="collapse navbar-collapse">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="/builds">All Builds</a></li>
-                <li class="nav-item"><a class="nav-link" href="/moderation">Moderation</a></li>
-                <li class="nav-item"><a class="nav-link" href="/my-builds">My Builds</a></li>
-                <li class="nav-item"><button class="btn btn-danger btn-sm" onclick="logout()">Logout</button></li>
+                <li class="nav-item"><a class="nav-link" href="/builds">🏠 All Builds</a></li>
+                <li class="nav-item"><a class="nav-link" href="/moderation">🛡️ Moderation</a></li>
+                <li class="nav-item"><a class="nav-link" href="/my-builds">📝 My Builds</a></li>
+                <li class="nav-item"><button class="btn btn-danger btn-sm" onclick="logout()">🚪 Logout</button></li>
             </ul>
         </div>
     </div>
 </nav>
 
 <div class="container mt-4">
-    <h1 class="text-center mb-4" style="color: #ffd700;">⚔️ Moderation Panel ⚔️</h1>
+    <h1 class="text-center mb-4" style="color: #ffd700;">
+        <i class="fas fa-shield-alt"></i> Moderation Panel
+        <span style="font-size: 0.9rem;">(Pending Builds)</span>
+    </h1>
     <div id="buildsGrid" class="row"></div>
 </div>
 
@@ -43,20 +133,42 @@
         return localStorage.getItem('accessToken');
     }
 
-    function checkAdmin() {
+    function isTokenValid() {
         const token = getToken();
-        if (!token) {
-            window.location.href = '/';
-            return false;
-        }
-        // Здесь можно проверить роль пользователя через /api/users/me
-        return true;
+        const expiry = localStorage.getItem('tokenExpiry');
+        if (!token) return false;
+        if (!expiry) return true;
+        return new Date().getTime() < parseInt(expiry);
+    }
+
+    function escapeHtml(text) {
+        if (!text) return text;
+        return String(text).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function getCategoryIcon(category) {
+        const icons = {
+            'BLOOD': '🩸',
+            'FROST': '❄️',
+            'POISON': '☠️',
+            'RED_ROT': '🦠',
+            'MAGIC': '✨',
+            'FIRE': '🔥',
+            'PHYSICAL': '⚔️',
+            'NOT': '❓'
+        };
+        return icons[category] || '❓';
     }
 
     function loadPendingBuilds() {
         const token = getToken();
 
-        $('#buildsGrid').html('<div class="col-12 text-center text-info">Loading pending builds...</div>');
+        $('#buildsGrid').html('<div class="col-12 text-center text-info"><i class="fas fa-spinner fa-spin"></i> Loading pending builds...</div>');
 
         $.ajax({
             url: API_URL + '/api/builds/pending',
@@ -67,7 +179,7 @@
                 grid.empty();
 
                 if (!builds || builds.length === 0) {
-                    grid.html('<div class="col-12 text-center" style="color:#888;">No pending builds for moderation</div>');
+                    grid.html('<div class="col-12 text-center" style="color:#888;"><i class="fas fa-check-circle"></i> No pending builds for moderation</div>');
                     return;
                 }
 
@@ -77,30 +189,40 @@
                         previewUrl = 'https://via.placeholder.com/300x200?text=No+Image';
                     }
 
+                    const categoryIcon = getCategoryIcon(build.damageCategory);
+                    const categoryName = build.damageCategory || 'NOT';
+
                     grid.append(`
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="row g-0">
-                                    <div class="col-md-4">
-                                        <img src="${previewUrl}" class="img-fluid rounded-start build-img" alt="${build.name}">
+                        <div class="col-md-4">
+                            <div class="card build-card">
+                                <div class="pending-badge">
+                                    <i class="fas fa-clock"></i> Pending
+                                </div>
+                                <div class="category-badge">
+                                    ${categoryIcon} ${categoryName}
+                                </div>
+                                <div class="moderation-buttons">
+                                    <button class="btn-approve" onclick="event.stopPropagation(); approveBuild(${build.id})">
+                                        <i class="fas fa-check"></i> Approve
+                                    </button>
+                                    <button class="btn-reject" onclick="event.stopPropagation(); rejectBuild(${build.id})">
+                                        <i class="fas fa-times"></i> Reject
+                                    </button>
+                                </div>
+                                <img src="${previewUrl}" class="card-img-top" alt="${escapeHtml(build.name)}" onclick="viewBuild(${build.id})">
+                                <div class="card-body" onclick="viewBuild(${build.id})">
+                                    <h5 class="card-title">${escapeHtml(build.name) || 'Unnamed'}</h5>
+                                    <p class="card-text">${escapeHtml(build.description) || 'No description'}</p>
+                                    <div class="equipment">
+                                        <div><strong>⚔️ Right:</strong> ${escapeHtml(build.right) || '-'}</div>
+                                        <div><strong>🛡️ Left:</strong> ${escapeHtml(build.left) || '-'}</div>
+                                        <div><strong>🪖 Helmet:</strong> ${escapeHtml(build.helmet) || '-'}</div>
+                                        <div><strong>👕 Armor:</strong> ${escapeHtml(build.armor) || '-'}</div>
+                                        <div><strong>🧤 Gloves:</strong> ${escapeHtml(build.gloves) || '-'}</div>
+                                        <div><strong>👖 Trousers:</strong> ${escapeHtml(build.trousers) || '-'}</div>
                                     </div>
-                                    <div class="col-md-8">
-                                        <div class="card-body">
-                                            <h5 class="card-title">${build.name || 'Unnamed'}</h5>
-                                            <p class="card-text">${build.description || 'No description'}</p>
-                                            <p><strong>Author:</strong> ${build.owner?.email || 'Unknown'}</p>
-                                            <p><strong>Equipment:</strong><br>
-                                            Right: ${build.right || '-'}<br>
-                                            Left: ${build.left || '-'}<br>
-                                            Helmet: ${build.helmet || '-'}<br>
-                                            Armor: ${build.armor || '-'}<br>
-                                            Gloves: ${build.gloves || '-'}<br>
-                                            Trousers: ${build.trousers || '-'}</p>
-                                            <div>
-                                                <button class="btn btn-approve btn-sm" onclick="approveBuild(${build.id})">✓ Approve</button>
-                                                <button class="btn btn-reject btn-sm" onclick="rejectBuild(${build.id})">✗ Reject</button>
-                                            </div>
-                                        </div>
+                                    <div class="author">
+                                        <i class="fas fa-user"></i> by ${escapeHtml(build.owner?.email) || 'Unknown'}
                                     </div>
                                 </div>
                             </div>
@@ -112,8 +234,11 @@
                 if (xhr.status === 403) {
                     alert('Access denied. Admin only.');
                     window.location.href = '/';
+                } else if (xhr.status === 401) {
+                    alert('Please login again');
+                    window.location.href = '/';
                 } else {
-                    $('#buildsGrid').html('<div class="col-12 text-center text-danger">Error loading builds</div>');
+                    $('#buildsGrid').html('<div class="col-12 text-center text-danger">Error loading builds: ' + (xhr.responseJSON?.message || xhr.statusText) + '</div>');
                 }
             }
         });
@@ -127,11 +252,11 @@
             type: 'PUT',
             headers: { 'Authorization': 'Bearer ' + token },
             success: function() {
-                alert('Build approved!');
                 loadPendingBuilds();
+                showToast('✅ Build approved!', 'success');
             },
             error: function(xhr) {
-                alert('Error: ' + (xhr.responseJSON?.message || xhr.responseText));
+                showToast('❌ Error: ' + (xhr.responseJSON?.message || xhr.responseText), 'danger');
             }
         });
     }
@@ -144,13 +269,34 @@
             type: 'PUT',
             headers: { 'Authorization': 'Bearer ' + token },
             success: function() {
-                alert('Build rejected!');
                 loadPendingBuilds();
+                showToast('❌ Build rejected!', 'warning');
             },
             error: function(xhr) {
-                alert('Error: ' + (xhr.responseJSON?.message || xhr.responseText));
+                showToast('❌ Error: ' + (xhr.responseJSON?.message || xhr.responseText), 'danger');
             }
         });
+    }
+
+    function viewBuild(id) {
+        window.location.href = '/build/' + id;
+    }
+
+    function showToast(message, type) {
+        // Создаем временное уведомление
+        const toast = $(`
+            <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+                <div class="toast show" role="alert">
+                    <div class="toast-header bg-${type} text-white">
+                        <strong class="me-auto">Moderation</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">${message}</div>
+                </div>
+            </div>
+        `);
+        $('body').append(toast);
+        setTimeout(() => toast.remove(), 3000);
     }
 
     function logout() {
@@ -158,7 +304,11 @@
         window.location.href = '/';
     }
 
-    if (checkAdmin()) {
+    // Проверяем авторизацию и загружаем билды
+    const token = getToken();
+    if (!token || !isTokenValid()) {
+        window.location.href = '/';
+    } else {
         loadPendingBuilds();
     }
 </script>

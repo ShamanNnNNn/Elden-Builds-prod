@@ -6,6 +6,8 @@ import com.example.demo.model.User;
 import com.example.demo.repository.BuildRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -51,6 +53,25 @@ public class BuildServiceImpl implements BuildService {
             return Optional.empty();
         }
         return buildRepository.findById(id);
+    }
+
+    public List<Build> getMyBuilds(User user, String search,
+                                   Build.BuildDamageCategory damage,
+                                   Build.BuildWeaponClass weaponClass,
+                                   Build.BuildStatus status,
+                                   String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Specification<Build> spec = Specification
+                .where(BuildSpecs.byOwner(user))
+                .and(BuildSpecs.nameContains(search))
+                .and(BuildSpecs.byDamageCategory(damage))
+                .and(BuildSpecs.byWeaponClass(weaponClass))
+                .and(BuildSpecs.byStatus(status));
+
+        return buildRepository.findAll(spec, sort);
     }
 
     @Override

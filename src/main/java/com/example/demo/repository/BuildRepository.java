@@ -4,6 +4,8 @@ import com.example.demo.model.Build;
 import com.example.demo.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -18,12 +20,12 @@ public interface BuildRepository extends JpaRepository<Build, Long> {
     List<Build> findByNameContainingIgnoreCase(String name);
     Optional<Build> findByName(String name);
 
-    // Исправлено: owner вместо user
     Page<Build> getBuildsByOwner(User owner, Pageable pageable);
     List<Build> findAll();
     List<Build> findByStatus(Build.BuildStatus status);
-    // Исправлено: owner вместо user
     Page<Build> findAllByOwner(User owner, Pageable pageable);
+
+    List<Build> findAll(Specification<Build> spec, Sort sort);
     //Page<Order> findByStatusAndPriorityAndOwner(User user, Pageable pageable);
 
 }

@@ -10,12 +10,11 @@ import java.util.Optional;
 
 
 public interface BuildService {
-    List<Build> getApprovedBuilds();  // ← ИСПРАВЛЕНО
+    List<Build> getApprovedBuilds();
     Build createBuild(Build build, User user);
     List<Build> getBuildsByUser(User user);
     Optional<Build> getBuildByIdAndOwner(Long id, User user);
     Optional<Build> getBuildById(Long id);
-
     List<Build> getPendingBuilds();
     List<Build> getAllBuilds();
     Page<Build> getAllBuilds(Pageable pageable, User user);
@@ -24,4 +23,6 @@ public interface BuildService {
     Build updateBuild(Build task, User user);
 
     void deleteBuild(Long id, User user);
+
+    List<Build> getMyBuilds(User user, String search, Build.BuildDamageCategory damage, Build.BuildWeaponClass weaponClass, Build.BuildStatus status, String sortBy, String sortDir);
 }

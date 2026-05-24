@@ -47,21 +47,21 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Публичные страницы (HTML)
                         .requestMatchers("/", "/index", "/build/**", "/my-builds", "/moderation").permitAll()
-                        // Статические ресурсы
-                        .requestMatchers("/webjars/**", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
-                        // Загруженные изображения
-                        .requestMatchers("/uploads/**").permitAll()
-                        // API аутентификации
-                        .requestMatchers("/api/auth/**").permitAll()
-                        // Публичные GET эндпоинты API
-                        .requestMatchers(HttpMethod.GET, "/api/builds").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/builds/*").permitAll()  // один ID
                         .requestMatchers("/build-editor/**").permitAll()
-                        // H2 Console
+                        .requestMatchers("/webjars/**", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/builds").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        // ✅ Сначала — специфичные защищённые маршруты
+                        .requestMatchers(HttpMethod.GET, "/api/builds/my").authenticated()
+
+                        // Потом — общий wildcard
+                        .requestMatchers(HttpMethod.GET, "/api/builds/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/builds/*/comments").permitAll()
+
                         .requestMatchers("/h2-console/**").permitAll()
-                        // Всё остальное требует аутентификации
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
